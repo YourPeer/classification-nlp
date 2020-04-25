@@ -1,4 +1,13 @@
-1¡¢Ìí¼ÓÎÄ¼ş¼Ğdata¡¢checkpoints
-2¡¢ÏÂÔØÊı¾İ£¬½âÑ¹ºó½«Èı¸ö.csvÖ±½Ó·ÅÈëµ½dataÎÄ¼ş¼ĞÏÂ£¬Á¬½ÓµØÖ·£ºhttps://pan.baidu.com/s/1TprekQac-yzNHMsREWZe9g£¬Code: uhxt
-3¡¢ÏÂÔØÔ¤ÑµÁ·´ÊÏòÁ¿£¨Á´½Ó£ºhttps://pan.baidu.com/s/1svFOwFBKnnlsqrF1t99Lnw£©£¬Ê¹ÓÃbunzip2 FileName.bz2½âÑ¹¸ÃÎÄ¼ş£¨windowsÏÂÊ¹ÓÃgit bash½âÑ¹£¬cmd½âÑ¹²»ÁË£©¡£
-4¡¢ÔËĞĞtrain.py¼´¿É£¬²ÎÊıµ÷ÕûÔÚargs.py,Ä£ĞÍµ÷ÕûÔÚmodel.py
+#æ“ä½œæ­¥éª¤ï¼š
+
+1ã€æ·»åŠ æ–‡ä»¶å¤¹dataã€checkpoints  
+
+2ã€ä¸‹è½½æ•°æ®ï¼Œè§£å‹åå°†ä¸‰ä¸ª.csvç›´æ¥æ”¾å…¥åˆ°dataæ–‡ä»¶å¤¹ä¸‹ï¼Œè¿æ¥åœ°å€ï¼šhttps://pan.baidu.com/s/1TprekQac-yzNHMsREWZe9gï¼ŒCode: uhxt 
+![dataæ–‡ä»¶å¤¹ä¸‹åŒ…å«çš„æ•°æ®æ–‡ä»¶](readme_images/0.png)  
+
+3ã€ä¸‹è½½é¢„è®­ç»ƒè¯å‘é‡ï¼ˆé“¾æ¥ï¼šhttps://pan.baidu.com/s/1svFOwFBKnnlsqrF1t99Lnwï¼‰ï¼Œä½¿ç”¨bunzip2 FileName.bz2è§£å‹è¯¥æ–‡ä»¶ï¼ˆwindowsä¸‹ä½¿ç”¨git bashè§£å‹ï¼Œcmdè§£å‹ä¸äº†ï¼‰ã€‚  
+![checkpointsæ–‡ä»¶å¤¹ä¸‹åŒ…å«çš„è¯å‘é‡æ–‡ä»¶](readme_images/1.png)
+  
+4ã€è¿è¡Œtrain.pyå³å¯ï¼Œå‚æ•°è°ƒæ•´åœ¨args.py,æ¨¡å‹è°ƒæ•´åœ¨model.py  
+
+5ã€trainå®Œæ¨¡å‹ä¿å­˜è‡³output_diræ–‡ä»¶å¤¹ä¸‹ï¼Œè¯å‘é‡æ¨¡å‹ä¿å­˜è‡³dataæ–‡ä»¶å¤¹ä¸‹
