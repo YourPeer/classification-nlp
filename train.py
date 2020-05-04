@@ -15,6 +15,7 @@ from sklearn.metrics import precision_recall_fscore_support
 
 from args import get_args
 from model import TextClassifier
+from bigru_attention_model import bigru_attention
 from tool import build_and_cache_dataset, save_model
 
 logging.basicConfig(
@@ -29,7 +30,8 @@ def train(args, writer):
 
     # Build train dataset
     fields, train_dataset = build_and_cache_dataset(args, mode='train')
-
+    # print(vars(train_dataset.examples[0]))
+    # {'id': '6552376326253183492', 'category': 'news_agriculture','news': [#split result]}
     # Build vocab
     ID, CATEGORY, NEWS = fields
     vectors = Vectors(name=args.embed_path, cache=args.data_dir)
@@ -41,13 +43,20 @@ def train(args, writer):
         unk_init=torch.nn.init.xavier_normal_,
     )
     CATEGORY.build_vocab(train_dataset)
+    # model = TextClassifier(
+    #     vocab_size=len(NEWS.vocab),
+    #     output_dim=args.num_labels,
+    #     pad_idx=NEWS.vocab.stoi[NEWS.pad_token],
+    #     dropout=args.dropout,
+    # )
 
-    model = TextClassifier(
+    model = bigru_attention(
         vocab_size=len(NEWS.vocab),
         output_dim=args.num_labels,
         pad_idx=NEWS.vocab.stoi[NEWS.pad_token],
         dropout=args.dropout,
     )
+
     # Init embeddings for model
     model.embedding.from_pretrained(NEWS.vocab.vectors)
 
@@ -59,57 +68,72 @@ def train(args, writer):
         sort_key=lambda x: len(x.news),
         device=args.device,
     )
-
+    f1_score = 0
     # optimizer, lr_scheduler, criterion
+    if os.listdir("output_dir"):
+        print(os.listdir("output_dir")[0].split("_")[1].split(".p")[0])
+        f1_score=float(os.listdir("output_dir")[0].split("_")[1].split(".p")[0])
+        model.load_state_dict(torch.load("output_dir/"+os.listdir("output_dir")[0]))
     model.to(args.device)
     criterion = nn.CrossEntropyLoss()
     optimizer = Adam(model.parameters(),
                      lr=args.learning_rate,
                      eps=args.adam_epsilon)
     # scheduler = lr_scheduler.OneCycleLR(optimizer,
-    #                        max_lr=args.learning_rate * 10,
+    #                        max_lr=args.learning_rate,
     #                        epochs=args.num_train_epochs,
     #                        steps_per_epoch=len(bucket_iterator))
-
-    lambda2 = lambda epoch: 0.2 ** epoch
-
-    scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda2)
+    #scheduler = lr_scheduler.StepLR(optimizer, step_size=4, gamma=0.1,last_epoch = -1 )
 
     global_step = 0
     model.zero_grad()
     train_trange = trange(0, args.num_train_epochs, desc="Train epoch")
+
+
     for _ in train_trange:
         epoch_iterator = tqdm(bucket_iterator, desc='Training')
+        results_f1_score=0
         for step, batch in enumerate(epoch_iterator):
             model.train()
-            news, news_lengths = batch.news
-            category = batch.category
-            preds = model(news, news_lengths)
 
+            news, news_lengths = batch.news #new.size() [8  ,64]
+            category = batch.category #category.size() [64]
+            #preds = model(news, news_lengths)
+            preds = model(news)
             loss = criterion(preds, category)
             loss.backward()
-
+            #optimizer.zero_grad()
+            optimizer.step()
+            #scheduler.step()
             # Logging
             writer.add_scalar('Train/Loss', loss.item(), global_step)
             # writer.add_scalar('Train/lr',
             #                   scheduler.get_last_lr()[0], global_step)
-
             # NOTE: Update model, optimizer should update before scheduler
-            optimizer.step()
-            scheduler.step()
+
+
+
             global_step += 1
 
             # NOTE:Evaluate
             if args.logging_steps > 0 and global_step % args.logging_steps == 0:
                 results = evaluate(args, model, CATEGORY.vocab, NEWS.vocab)
+                results_f1_score=results['f1']
                 for key, value in results.items():
                     writer.add_scalar("Eval/{}".format(key), value,
                                       global_step)
 
             # NOTE: save model
-            if args.save_steps > 0 and global_step % args.save_steps == 0:
-                save_model(args, model, optimizer, scheduler, global_step)
-
+            # if args.save_steps > 0 and global_step % args.save_steps == 0:
+            #     save_model(args, model, optimizer, scheduler, global_step)
+            if results_f1_score>f1_score:
+                try:
+                    os.remove("output_dir/model_"+str(f1_score)+".pt")
+                except:
+                    print("None!")
+                torch.save(model.state_dict(), "output_dir/model_"+str(results_f1_score)+".pt")
+                f1_score=results_f1_score
+                print("So far the best score is:"+str(f1_score)+"+++++++++++++++++++++++++++++++")
     writer.close()
 
 
@@ -139,7 +163,8 @@ def evaluate(args, model, category_vocab, example_vocab, mode='dev'):
         news, news_lengths = batch.news
         labels = batch.category
         with torch.no_grad():
-            logits = model(news, news_lengths)
+            # logits = model(news, news_lengths)
+            logits = model(news)
             loss = criterion(logits, labels)
             eval_loss += loss.item()
 
@@ -174,16 +199,15 @@ def main():
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
 
-    if os.path.exists(args.output_dir) \
-            and os.listdir(args.output_dir) \
-            and  args.overwrite_output_dir:
-        raise ValueError(
-            f"Output directory ({args.output_dir}) already exists and is not empty. "
-            "Use --overwrite_output_dir to overcome.")
+    # if os.path.exists(args.output_dir) \
+    #         and os.listdir(args.output_dir) \
+    #         and  args.overwrite_output_dir:
+    #     raise ValueError(
+    #         f"Output directory ({args.output_dir}) already exists and is not empty. "
+    #         "Use --overwrite_output_dir to overcome.")
 
     # Set device
-    device = "cuda" if torch.cuda.is_available() \
-            and not args.no_cuda else "cpu"
+    device = "cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu"
     args.device = torch.device(device)
     logger.info("Process device: %s", device)
 

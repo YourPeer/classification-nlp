@@ -15,7 +15,7 @@ def build_and_cache_dataset(args, mode='train'):
     CATEGORY = LabelField(sequential=False, use_vocab=True, is_target=True)
     NEWS = Field(
         sequential=True,
-        tokenize=jieba.lcut,
+        tokenize=jieba.lcut, #可以使用自定义函数，即别的分词工具
         include_lengths=True,
     )
 
@@ -55,3 +55,7 @@ def save_model(args, model, optimizer, scheduler, global_step):
                                                     "optimizer.pt"))
     torch.save(scheduler.state_dict(), os.path.join(output_dir,
                                                     "scheduler.pt"))
+
+
+
+

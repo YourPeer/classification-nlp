@@ -14,7 +14,7 @@ class TextClassifier(nn.Module):
         hidden_dim=128,
         embed_dim=300,
         dropout=0.1,
-        bidirectional=False,
+        bidirectional=True,
     ):
         super().__init__()
         num_directions = 1 if not bidirectional else 2
@@ -30,9 +30,14 @@ class TextClassifier(nn.Module):
             bidirectional=bidirectional,
             dropout=dropout,
         )
+        self.gru=nn.GRU(embed_dim, hidden_dim, num_layers=n_layers, bidirectional=True,dropout=dropout)
         self.dropout = nn.Dropout(p=dropout)
         self.linear = nn.Linear(hidden_dim * n_layers * num_directions,
+                                64)
+        self.linear2 = nn.Linear(64,
                                 output_dim)
+        # self.linear3 = nn.Linear(64,
+        #                          output_dim)
 
     def forward(self, x, x_len):
         x = self.embedding(x)
@@ -42,8 +47,13 @@ class TextClassifier(nn.Module):
         # h_n: (num_layers * num_directions, batch_size, hidden_size)
         # NOTE: take the last hidden state of encoder as in seq2seq architecture.
         hidden_states, (h_n, c_c) = self.lstm(x)
+        #hidden_states, (h_n, c_c) = self.gru(x)
         h_n = torch.transpose(self.dropout(h_n), 0, 1).contiguous()
         # h_n:(batch_size, hidden_size * num_layers * num_directions)
         h_n = h_n.view(h_n.shape[0], -1)
         loggits = self.linear(h_n)
+        loggits = self.linear2(loggits)
+
         return loggits
+
+

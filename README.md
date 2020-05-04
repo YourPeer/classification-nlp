@@ -12,4 +12,16 @@
   
 4、运行train.py即可，参数调整在args.py,模型调整在model.py  
 
-5、train完模型保存至output_dir文件夹下，词向量模型保存至data文件夹下
+5、train完模型保存至output_dir文件夹下，词向量模型保存至data文件夹下  
+
+#代码学习和调试
+
+torchtext类是一个nlp领域文本预处理包，可以方便我们处理数据。  
+train.py函数和中，通过tool.build_and_cache_dataset处理后返回的数据格式如下：  
+`print(vars(train_dataset.examples[0]))`  
+打印第一个数据，结果如下：
+```{  
+  'id': '6552376326253183492',   
+  'category': 'news_agriculture',  
+  'news': ['我国', '大量', '的', '进口', '的', '国外', '大豆', ',', '用到', '哪里', '去', '了', '呢', '?', '看', '完才', '明白', '!']  
+}```

@@ -65,7 +65,7 @@ def get_args():
                         type=float,
                         help="dropout prob")
     parser.add_argument("--learning_rate",
-                        default=1e-4,
+                        default=0.00001,
                         type=float,
                         help="The initial learning rate for Adam.")
     parser.add_argument("--adam_epsilon",
@@ -77,7 +77,7 @@ def get_args():
                         type=float,
                         help="Max gradient norm.")
     parser.add_argument("--num_train_epochs",
-                        default=5,
+                        default=20,
                         type=int,
                         help="Total number of training epochs to perform.")
     parser.add_argument("--warmup_steps",
