@@ -4,14 +4,19 @@
 
 2、下载数据，解压后将三个.csv直接放入到data文件夹下，连接地址：https://pan.baidu.com/s/1TprekQac-yzNHMsREWZe9g，Code: uhxt 
 
+<<<<<<< HEAD
 ![data/](readme_images/0.png)  
+=======
+![data](https://github.com/YourPeer/classification-nlp/blob/master/readme_images/0.png)  
+>>>>>>> 970b533c86daad1e00cf5108b30ccc6361b53bfd
 
 3、下载预训练词向量（链接：https://pan.baidu.com/s/1svFOwFBKnnlsqrF1t99Lnw），使用bunzip2 FileName.bz2解压该文件（windows下使用git bash解压，cmd解压不了）。  
 
-![checkpoints](readme_images/1.png)
+![checkpoints](https://github.com/YourPeer/classification-nlp/blob/master/readme_images/1.png)
   
 4、运行train.py即可，参数调整在args.py,模型调整在model.py  
 
+<<<<<<< HEAD
 5、train完模型保存至output_dir文件夹下，词向量模型保存至data文件夹下  
 
 #代码学习和调试
@@ -25,3 +30,6 @@ train.py函数和中，通过tool.build_and_cache_dataset处理后返回的数�
   'category': 'news_agriculture',  
   'news': ['我国', '大量', '的', '进口', '的', '国外', '大豆', ',', '用到', '哪里', '去', '了', '呢', '?', '看', '完才', '明白', '!']  
 }```
+=======
+5、train完模型保存至output_dir文件夹下，词向量模型保存至data文件夹下
+>>>>>>> 970b533c86daad1e00cf5108b30ccc6361b53bfd
