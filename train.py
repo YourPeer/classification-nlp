@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import logging
 from typing import List, Dict
@@ -26,12 +27,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def train(args, writer):
+def train(args, writer,is_train=True):
 
     # Build train dataset
     fields, train_dataset = build_and_cache_dataset(args, mode='train')
-    # print(vars(train_dataset.examples[0]))
-    # {'id': '6552376326253183492', 'category': 'news_agriculture','news': [#split result]}
+    # for i in range(5):
+    #     print(train_dataset[i].category,train_dataset[i].news)
+    # return
+
     # Build vocab
     ID, CATEGORY, NEWS = fields
     vectors = Vectors(name=args.embed_path, cache=args.data_dir)
@@ -43,6 +46,14 @@ def train(args, writer):
         unk_init=torch.nn.init.xavier_normal_,
     )
     CATEGORY.build_vocab(train_dataset)
+
+    # print("查找第1000个单词:"+NEWS.vocab.itos[1000])
+    # print("查找单词‘每个’的索引："+str(NEWS.vocab.stoi[r'每个']))
+    # print("词向量矩阵的维度:"+str(NEWS.vocab.vectors.shape))
+    # word_vec = NEWS.vocab.vectors[NEWS.vocab.stoi['每个']]
+    # print("单词‘每个’的词向量为："+str(word_vec))
+    # return
+
     # model = TextClassifier(
     #     vocab_size=len(NEWS.vocab),
     #     output_dim=args.num_labels,
@@ -50,6 +61,7 @@ def train(args, writer):
     #     dropout=args.dropout,
     # )
 
+    #使用双向gru+attetion机制模型
     model = bigru_attention(
         vocab_size=len(NEWS.vocab),
         output_dim=args.num_labels,
@@ -69,9 +81,7 @@ def train(args, writer):
         device=args.device,
     )
     f1_score = 0
-    # optimizer, lr_scheduler, criterion
     if os.listdir("output_dir"):
-        print(os.listdir("output_dir")[0].split("_")[1].split(".p")[0])
         f1_score=float(os.listdir("output_dir")[0].split("_")[1].split(".p")[0])
         model.load_state_dict(torch.load("output_dir/"+os.listdir("output_dir")[0]))
     model.to(args.device)
@@ -87,54 +97,57 @@ def train(args, writer):
 
     global_step = 0
     model.zero_grad()
-    train_trange = trange(0, args.num_train_epochs, desc="Train epoch")
 
 
-    for _ in train_trange:
-        epoch_iterator = tqdm(bucket_iterator, desc='Training')
-        results_f1_score=0
-        for step, batch in enumerate(epoch_iterator):
-            model.train()
+    if is_train:
+        train_trange = trange(0, args.num_train_epochs, desc="Train epoch")
+        for _ in train_trange:
+            epoch_iterator = tqdm(bucket_iterator, desc='Training')
+            results_f1_score=0
+            for step, batch in enumerate(epoch_iterator):
+                model.train()
 
-            news, news_lengths = batch.news #new.size() [8  ,64]
-            category = batch.category #category.size() [64]
-            #preds = model(news, news_lengths)
-            preds = model(news)
-            loss = criterion(preds, category)
-            loss.backward()
-            #optimizer.zero_grad()
-            optimizer.step()
-            #scheduler.step()
-            # Logging
-            writer.add_scalar('Train/Loss', loss.item(), global_step)
-            # writer.add_scalar('Train/lr',
-            #                   scheduler.get_last_lr()[0], global_step)
-            # NOTE: Update model, optimizer should update before scheduler
+                news, news_lengths = batch.news #new.size() [8  ,64]
+                category = batch.category #category.size() [64]
+                #preds = model(news, news_lengths)
+                preds = model(news)
+                loss = criterion(preds, category)
+                loss.backward()
+                #optimizer.zero_grad()
+                optimizer.step()
+                #scheduler.step()
+                # Logging
+                writer.add_scalar('Train/Loss', loss.item(), global_step)
+                # writer.add_scalar('Train/lr',
+                #                   scheduler.get_last_lr()[0], global_step)
+                # NOTE: Update model, optimizer should update before scheduler
 
 
 
-            global_step += 1
+                global_step += 1
 
-            # NOTE:Evaluate
-            if args.logging_steps > 0 and global_step % args.logging_steps == 0:
-                results = evaluate(args, model, CATEGORY.vocab, NEWS.vocab)
-                results_f1_score=results['f1']
-                for key, value in results.items():
-                    writer.add_scalar("Eval/{}".format(key), value,
-                                      global_step)
+                # NOTE:Evaluate
+                if args.logging_steps > 0 and global_step % args.logging_steps == 0:
+                    results = evaluate(args, model, CATEGORY.vocab, NEWS.vocab)
+                    results_f1_score=results['f1']
+                    for key, value in results.items():
+                        writer.add_scalar("Eval/{}".format(key), value,
+                                          global_step)
 
-            # NOTE: save model
-            # if args.save_steps > 0 and global_step % args.save_steps == 0:
-            #     save_model(args, model, optimizer, scheduler, global_step)
-            if results_f1_score>f1_score:
-                try:
-                    os.remove("output_dir/model_"+str(f1_score)+".pt")
-                except:
-                    print("None!")
-                torch.save(model.state_dict(), "output_dir/model_"+str(results_f1_score)+".pt")
-                f1_score=results_f1_score
-                print("So far the best score is:"+str(f1_score)+"+++++++++++++++++++++++++++++++")
-    writer.close()
+                # NOTE: save model
+                # if args.save_steps > 0 and global_step % args.save_steps == 0:
+                #     save_model(args, model, optimizer, scheduler, global_step)
+                if results_f1_score>f1_score:
+                    try:
+                        os.remove("output_dir/model_"+str(f1_score)+".pt")
+                    except:
+                        print("None!")
+                    torch.save(model.state_dict(), "output_dir/model_"+str(results_f1_score)+".pt")
+                    f1_score=results_f1_score
+                    print("So far the best score is:"+str(f1_score)+"+++++++++++++++++++++++++++++++")
+        writer.close()
+    else:
+        test(args, model, CATEGORY.vocab, NEWS.vocab)
 
 
 def evaluate(args, model, category_vocab, example_vocab, mode='dev'):
@@ -190,6 +203,60 @@ def evaluate(args, model, category_vocab, example_vocab, mode='dev'):
     logger.info(msg)
     return results
 
+def test(args, model, category_vocab, example_vocab, mode='test'):
+    fields, test_dataset = build_and_cache_dataset(args, mode=mode)
+    bucket_iterator = BucketIterator(
+        test_dataset,
+        train=False,
+        batch_size=args.eval_batch_size,
+        sort_within_batch=True,
+        sort_key=lambda x: len(x.news),
+        device=args.device,
+    )
+    ID, CATEGORY, NEWS = fields
+    CATEGORY.vocab = category_vocab
+    NEWS.vocab = example_vocab
+
+    model.eval()
+    criterion = nn.CrossEntropyLoss()
+    eval_loss, eval_steps = 0.0, 0
+    labels_list, preds_list = [], []
+    for batch in tqdm(bucket_iterator, desc='test'):
+        news, news_lengths = batch.news
+        labels = batch.category
+        with torch.no_grad():
+            # logits = model(news, news_lengths)
+            logits = model(news)
+            loss = criterion(logits, labels)
+            eval_loss += loss.item()
+
+        eval_steps += 1
+        preds = torch.argmax(logits, dim=1)
+        preds_list.append(preds)
+        labels_list.append(labels)
+
+    y_true = torch.cat(labels_list).detach().cpu().numpy()
+    y_pred = torch.cat(preds_list).detach().cpu().numpy()
+    import pandas as pd
+    classes_map={0:'news_culture', 1:'news_car', 2:'news_edu', 3:'news_house', 4:'news_agriculture'}
+    test_dict={"predict value":y_pred,"ture value":y_true,"predict class":[classes_map[i] for i in y_pred],"ture class":[classes_map[i] for i in y_true]}
+    test_dict_df = pd.DataFrame(test_dict)
+    test_dict_df.to_csv("test_data.csv")
+    precision, recall, f1_score, _ = precision_recall_fscore_support(
+        y_true, y_pred, average='micro')
+
+    # Write into tensorboard
+    # TODO: recore false-pos and false-neg samples.
+    results = {
+        'loss': eval_loss / eval_steps,
+        'f1': f1_score,
+        'precision': precision,
+        'recall': recall
+    }
+    msg = f'*** test: loss {loss}, f1 {f1_score}, precision {precision}, recall {recall}'
+    logger.info(msg)
+    return results
+
 
 def main():
     args = get_args()
@@ -211,7 +278,7 @@ def main():
     args.device = torch.device(device)
     logger.info("Process device: %s", device)
 
-    train(args, writer)
+    train(args, writer,is_train=False)
 
 
 if __name__ == "__main__":

@@ -65,7 +65,7 @@ def get_args():
                         type=float,
                         help="dropout prob")
     parser.add_argument("--learning_rate",
-                        default=0.00001,
+                        default=0.0001,
                         type=float,
                         help="The initial learning rate for Adam.")
     parser.add_argument("--adam_epsilon",
